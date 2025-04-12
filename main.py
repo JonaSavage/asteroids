@@ -1,45 +1,66 @@
-import os
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+from os import environ
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
+import pygame
 from constants import *
 from player import Player
-import pygame
+from asteroid import Asteroid
+from asteroidfield import AsteroidField
+from shot import Shot
 
-# WSL filepath: boot-dev_projects/github.com/JonaSavage/asteroids
-# Virtual Environment: python3 -m venv venv
-# Activation: source venv/bin/activate
 
 def main():
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
+
+    updatable = pygame.sprite.Group()
+    drawable = pygame.sprite.Group()
+    asteroids = pygame.sprite.Group()
+    shots = pygame.sprite.Group()
+
+    Asteroid.containers = (asteroids, updatable, drawable)
+    AsteroidField.containers = updatable
+    asteroid_field = AsteroidField()
+
+    Shot.containers = (shots, updatable, drawable)
+
+
+    Player.containers = (updatable, drawable)
+
+    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+
     dt = 0
 
-    updatable_group  = pygame.sprite.Group()
-    drawable_group = pygame.sprite.Group()
-    Player.containers = (updatable_group, drawable_group)
-
-    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, PLAYER_RADIUS, 0, Player.containers)
-
-    print("\nStarting Asteroids!")
+    print("Starting Asteroids...")
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                print("\nGoodbye!")
                 return
-        
-        updatable_group.update(dt)
+
+        updatable.update(dt)
+
+        for obj in asteroids:
+            if obj.collides(player):
+                print("Game over!")
+                return
+            for s in shots:
+                if obj.collides(s):
+                    obj.split()
+                    s.kill()
+
         screen.fill("black")
-        for thing in drawable_group:
-            thing.draw(screen)
-        
+
+        for obj in drawable:
+            obj.draw(screen)
 
         pygame.display.flip()
 
-        # Framerate = 60 FPS
+        # limit the framerate to 60 FPS
         dt = clock.tick(60) / 1000
 
 
 if __name__ == "__main__":
     main()
-
